@@ -1,31 +1,33 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
 const app = express();
 const port = 3000;
 
-// Middleware to log requests
-app.use((req, res, next) => {
-  console.log(`${req.method} request for '${req.url}'`);
-  next();
+// Set up multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  }
 });
+
+const upload = multer({ storage: storage });
 
 // Middleware to serve static files
 app.use(express.static('public'));
 
-// Routes
+// Route to display the upload form
 app.get('/', (req, res) => {
-  res.send('Hello, World!');
+  res.sendFile('index.html', { root: 'views' });
 });
 
-app.get('/about', (req, res) => {
-  res.send('About Us');
-});
-
-app.get('/contact', (req, res) => {
-  res.send('Contact Us');
-});
-
-app.get('/api/data', (req, res) => {
-  res.json({ message: 'This is some JSON data' });
+// Route to handle file upload
+app.post('/upload', upload.single('file'), (req, res) => {
+  const filePath = `/uploads/${req.file.filename}`;
+  res.send(`<h2>File uploaded successfully</h2><a href="${filePath}">View File</a>`);
 });
 
 // Error handling middleware

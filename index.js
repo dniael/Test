@@ -5,3 +5,4 @@ function logMessage(message, times) {
 }
 
 logMessage("Hello, world!", 10);
+console.log("This is the end of the program");

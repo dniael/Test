@@ -1,8 +1,11 @@
-function logMessage(message, times) {
-  for (let i = 0; i < times; i++) {
-      console.log(message);
-  }
-}
+const express = require('express');
+const app = express();
+const port = 3000;
 
-logMessage("Hello, world!", 10);
-console.log("This is the end of the program");
+app.get('/', (req, res) => {
+  res.send('Hello, World!');
+});
+
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}/`);
+});

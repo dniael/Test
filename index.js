@@ -24,6 +24,10 @@ app.get('/', (req, res) => {
   res.sendFile('index.html', { root: 'views' });
 });
 
+app.get('/uploads/:fileName', (req, res) => {
+    res.sendFile(`${req.params.fileName}`, { root: 'uploads' });
+});
+
 // Route to handle file upload
 app.post('/upload', upload.single('file'), (req, res) => {
   const filePath = `/uploads/${req.file.filename}`;

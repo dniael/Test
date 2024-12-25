@@ -1,11 +1,7 @@
-console.log("test");
-console.log("test");
-console.log("test");
-console.log("test");
-console.log("test");
-console.log("test");
-console.log("test");
-console.log("test");
-console.log("test");
-console.log("test");
-console.log("test");
+function logMessage(message, times) {
+  for (let i = 0; i < times; i++) {
+      console.log(message);
+  }
+}
+
+logMessage("Hello, world!", 10);

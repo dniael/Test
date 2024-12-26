@@ -4,12 +4,110 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>File Upload</title>
+  <style>
+    button {
+      width: 90px;
+      height: 35px;
+    }
+
+    .slide {
+      position: absolute;
+      transition: transform 0.5s ease;
+    }
+
+    #uploadButton {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .dark-theme {
+      background-color: grey;
+      color: white;
+    }
+    .darker-theme {
+      background-color: black;
+      color: white;
+    }
+    .trail {
+      position: absolute;
+      background: linear-gradient(to right, rgba(128, 0, 128, 0.1), rgba(224, 176, 255, 0.1));
+      border-radius: 5px;
+      opacity: 0.8;
+      animation: fadeOut 0.5s forwards;
+      z-index: -1;
+    }
+
+    @keyframes fadeOut {
+      to {
+        opacity: 0;
+        transform: scale(0.5);
+      }
+    }
+
+    .explosion {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      background: radial-gradient(circle, red, yellow, transparent);
+      border-radius: 50%;
+      animation: explode 0.5s ease-out forwards;
+    }
+
+    .explosionf {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      background: radial-gradient(circle, purple, yellow, transparent);
+      border-radius: 50%;
+      animation: explodef 1s ease-out forwards;
+    }
+
+    @keyframes explode {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(3);
+        opacity: 0;
+      }
+    }
+
+    @keyframes explodef {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(10);
+        opacity: 0;
+      }
+    }
+
+    .health-bar {
+      width: 100%;
+      height: 20px;
+      background-color: red;
+      margin-bottom: 10px;
+    }
+
+    .health-bar-inner {
+      width: 100%;
+      height: 100%;
+      background-color: green;
+    }
+  </style>
 </head>
 <body>
   <h1>Upload a File</h1>
-  <form action="/upload" method="post" enctype="multipart/form-data">
+  <div class="health-bar">
+    <div class="health-bar-inner" id="health-bar-inner"></div>
+  </div>
+  <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">    
     <input type="file" name="file" required>
-    <button type="submit">Upload</button>
+    <button type="submit" id="uploadButton" class="slide">Upload</button>
   </form>
   <h2>Uploaded Files</h2>
   <ul>
@@ -17,5 +115,121 @@
       <li><a href="/uploads/<%= file %>"><%= file %></a></li>
     <% }) %>
   </ul>
+
+  <script>
+    const button = document.getElementById('uploadButton');
+    let initialPositionSet = false;
+    let health = 8;
+
+    function slide(elm, entropy, trail) {
+      const rect = elm.getBoundingClientRect();
+      const maxX = window.innerWidth - rect.width;
+      const maxY = window.innerHeight - rect.height;
+      const randomX = Math.max(0, Math.min(maxX, rect.left + Math.floor(Math.random() * (2 * entropy)) - entropy));
+      const randomY = Math.max(0, Math.min(maxY, rect.top + Math.floor(Math.random() * (2 * entropy)) - entropy));
+
+      if (trail) {
+        let intervalId = setInterval(() => {
+          const trail = document.createElement('div');
+          trail.className = 'trail';
+          const trailRect = elm.getBoundingClientRect();
+          trail.style.left = `${trailRect.left}px`;
+          trail.style.top = `${trailRect.top}px`;
+          trail.style.width = elm.offsetWidth + 3 + 'px'  ;
+          trail.style.height = elm.offsetHeight + 3 + 'px';
+
+          const hue = Math.floor(Math.random() * 360);
+          trail.style.background = `linear-gradient(90deg, hsl(${hue}, 100%, 50%), hsl(${(hue + 60) % 360}, 100%, 75%))`;
+
+          document.body.appendChild(trail);
+
+          setTimeout(() => {
+              trail.remove();
+          }, 500);
+        }, 50);
+
+        setTimeout(() => {
+          clearInterval(intervalId);
+        }, 500);
+      }
+
+     elm.style.transform = `translate(${randomX - rect.left}px, ${randomY - rect.top}px)`;
+    }
+
+    button.addEventListener('mouseover', () => {
+      if (health <= 0) {
+        return;
+      }
+
+      if (!initialPositionSet) {
+        button.style.transform = 'translate(0, 0)';
+        initialPositionSet = true;
+      }
+      if (health > 3) {
+        slide(button, 500, true);
+      }
+    });
+
+
+    const form = document.getElementById('upload-form');    
+
+    function createExplosion(f) {
+      const rect = button.getBoundingClientRect();
+      const explosion = document.createElement('div');
+
+      explosion.className = f ? 'explosionf' : 'explosion';
+      
+      explosion.style.left = `${rect.left + window.scrollX + rect.width / 2 - 50}px`;
+      explosion.style.top = `${rect.top + window.scrollY + rect.height / 2 - 50}px`;
+      document.body.appendChild(explosion);
+
+      setTimeout(() => {
+        explosion.remove();
+      }, 500);
+    }
+    let slideId;
+    let fileSlideId;
+    const files = document.querySelector("ul").getElementsByTagName("li");
+
+    button.addEventListener('mousedown', (e) => {
+        if (health <= 0) {
+          return;
+        }
+        createExplosion(false);
+        health--;
+        const healthBarInner = document.getElementById('health-bar-inner');
+        healthBarInner.style.width = (health / 8) * 100 + '%';
+
+        if (health <= 0) {
+          createExplosion(true);  
+          clearInterval(slideId);
+          clearInterval(fileSlideId)
+          for (let i = 0; i < files.length; i++) {
+            files[i].classList.remove('slide');
+            files[i].style.pointerEvents = 'all';
+          }
+        } else if (health === 3) {
+          document.body.classList.add('dark-theme');
+          slideId = setInterval(slide.bind(this, button, 700, true), 500);
+        } else if (health === 1) {
+          document.body.classList = [];
+          document.body.classList.add('darker-theme');
+          clearInterval(slideId);
+          slideId = setInterval(slide.bind(this, button, 700, true), 300);
+          for (let i = 0; i < files.length; i++) {
+            files[i].classList.add('slide');
+            files[i].style.pointerEvents = 'none';
+            files[i].style.left = '50%';
+            files[i].style.top = '50%';
+          }
+          fileSlideId = setInterval(() => {
+            for (let i = 0; i < files.length; i++) {
+              slide(files[i], 700, true);
+            }
+          }, 300);
+        }
+      });
+
+  </script>
 </body>
 </html>

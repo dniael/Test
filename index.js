@@ -1,8 +1,13 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const app = express();
 const port = 3000;
+
+// Set up EJS as the templating engine
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
 // Set up multer for file uploads
 const storage = multer.diskStorage({
@@ -19,13 +24,18 @@ const upload = multer({ storage: storage });
 // Middleware to serve static files
 app.use(express.static('public'));
 
-// Route to display the upload form
+// Route to display the upload form and list of uploaded files
 app.get('/', (req, res) => {
-  res.sendFile('index.html', { root: 'views' });
+  fs.readdir('uploads/', (err, files) => {
+    if (err) {
+      return res.status(500).send('Unable to scan files!');
+    }
+    res.render('index', { files: files });
+  });
 });
 
 app.get('/uploads/:fileName', (req, res) => {
-    res.sendFile(`${req.params.fileName}`, { root: 'uploads' });
+  res.sendFile(`${req.params.fileName}`, { root: 'uploads' });
 });
 
 // Route to handle file upload
